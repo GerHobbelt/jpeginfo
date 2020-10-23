@@ -12,10 +12,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#if defined(HAVE_UNISTD_H)
 #include <unistd.h>
+#endif
 #include "jpeginfo.h"
-
-static char *rcsid = "$Id$";
 
 
 int is_dir(FILE *fp)
@@ -41,8 +41,6 @@ long filesize(FILE *fp)
 
 void delete_file(char *name, int verbose_mode, int quiet_mode)
 {
-  if (rcsid); /* so the compiler cannot optimize our rcsid string :) */
-
   if (!name) return;
   if (verbose_mode && !quiet_mode) fprintf(stderr,"deleting: %s\n",name);
   if (unlink(name) && !quiet_mode) 
