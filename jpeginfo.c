@@ -1,6 +1,6 @@
  /*******************************************************************
- * 
- * JPEGinfo 
+ *
+ * JPEGinfo
  * Copyright (c) Timo Kokkonen, 1995-2009.
  *
  */
@@ -48,7 +48,7 @@
 
 struct my_error_mgr {
   struct jpeg_error_mgr pub;
-  jmp_buf setjmp_buffer;   
+  jmp_buf setjmp_buffer;
 };
 typedef struct my_error_mgr * my_error_ptr;
 
@@ -87,7 +87,7 @@ char *current = NULL;
 
 /*****************************************************************/
 
-METHODDEF(void) 
+METHODDEF(void)
 my_error_exit (j_common_ptr cinfo)
 {
   my_error_ptr myerr = (my_error_ptr)cinfo->err;
@@ -101,9 +101,9 @@ my_output_message (j_common_ptr cinfo)
 {
   char buffer[JMSG_LENGTH_MAX];
 
-  (*cinfo->err->format_message) (cinfo, buffer); 
+  (*cinfo->err->format_message) (cinfo, buffer);
   if (quiet_mode < 2) printf(" %s ",buffer);
-  global_error_counter++; 
+  global_error_counter++;
   global_total_errors++;
 }
 
@@ -115,33 +115,33 @@ void no_memory(void)
 }
 
 
-void p_usage(void) 
+void p_usage(void)
 {
  if (!quiet_mode) {
   fprintf(stderr,"jpeginfo v" VERSION
-	  " Copyright (c) Timo Kokkonen, 1995-2020.\n"); 
+	  " Copyright (c) Timo Kokkonen, 1995-2020.\n");
 
   fprintf(stderr,
        "Usage: jpeginfo [options] <filenames>\n\n"
        "  -c, --check     check files also for errors\n"
-       "  -C, --comments  display comments (from COM markers)\n" 
+       "  -C, --comments  display comments (from COM markers)\n"
        "  -d, --delete    delete files that have errors\n"
        "  -f<filename>,  --file<filename>\n"
        "                  read the filenames to process from given file\n"
        "                  (for standard input use '-' as a filename)\n"
        "  -h, --help      display this help and exit\n"
-       "  -5, --md5       calculate MD5 checksum for each file\n"	  
+       "  -5, --md5       calculate MD5 checksum for each file\n"
        "  -i, --info      display even more information about pictures\n"
        "  -l, --lsstyle   use alternate listing format (ls -l style)\n"
        "  -v, --verbose   enable verbose mode (positively chatty)\n"
-       "  --version	  print program version and exit\n" 
+       "  --version	  print program version and exit\n"
        "  -q, --quiet     quiet mode, output just jpeg infos\n"
        "  -m<mode>, --mode=<mode>\n"
        "                  defines which jpegs to remove (when using"
 	                 " the -d option).\n"
        "                  Mode can be one of the following:\n"
        "                    erronly     only files with serious errrors\n"
-       "                    all         files ontaining warnings or errors"
+       "                    all         files containing warnings or errors"
        " (default)\n\n\n");
  }
 
@@ -159,7 +159,7 @@ static void error_exit(j_common_ptr cinfo)
 }
 
 /*****************************************************************/
-int main(int argc, char **argv) 
+int main(int argc, char **argv)
 {
   JSAMPARRAY buf = malloc(sizeof(JSAMPROW)*BUF_LINES);
   jpeg_saved_marker_ptr exif_marker, cmarker;
@@ -173,9 +173,9 @@ int main(int argc, char **argv)
   char digest_text[33];
   size_t last_read;
   fz_context* ctx = fz_get_global_context();
-  
+
   global_total_errors=0;
- 
+
   struct jpeg_decompress_struct cinfo;
   struct my_error_mgr jerr;
 
