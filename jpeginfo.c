@@ -184,7 +184,7 @@ int main(int argc, char **argv)
   cinfo.err = jpeg_std_error(&jerr.pub);
 
   cinfo.client_data = ctx;
-  fz_jpg_mem_init((j_common_ptr)&cinfo, ctx);
+  //fz_jpg_mem_init((j_common_ptr)&cinfo, ctx);
 
   fz_try(ctx)
   {
@@ -292,7 +292,7 @@ int main(int argc, char **argv)
 		  }
 		  if (is_dir(infile)) {
 			  fclose(infile);
-			  if (verbose_mode) printf("directory: %s  skipped\n", current);
+			  if (verbose_mode) printf("directory: '%s' skipped\n", current);
 			  continue;
 		  }
 
@@ -303,7 +303,7 @@ int main(int argc, char **argv)
 			  if (!md5buf) no_memory();
 			  last_read = fread(md5buf, 1, fs, infile);
 			  if (last_read < fs) {
-				  fprintf(stderr, "jpeginfo: failed to read entire file: %s\n", current);
+				  fprintf(stderr, "jpeginfo: failed to read entire file: '%s'\n", current);
 				  continue;
 			  }
 			  rewind(infile);
