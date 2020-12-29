@@ -23,7 +23,7 @@ int is_dir(FILE *fp)
  struct stat buf;
  
  if (!fp) return 0;
- if (fstat(fileno(fp),&buf)) return 0;
+ if (fstat(_fileno(fp),&buf)) return 0;
  if (S_ISDIR(buf.st_mode)) return 1;
  return 0;
 }
@@ -34,7 +34,7 @@ long filesize(FILE *fp)
   struct stat buf;
 
   if (!fp) return -1;
-  if (fstat(fileno(fp),&buf)) return -1;
+  if (fstat(_fileno(fp),&buf)) return -1;
   return buf.st_size;
 }
 
@@ -43,7 +43,7 @@ void delete_file(char *name, int verbose_mode, int quiet_mode)
 {
   if (!name) return;
   if (verbose_mode && !quiet_mode) fprintf(stderr,"deleting: %s\n",name);
-  if (unlink(name) && !quiet_mode) 
+  if (_unlink(name) && !quiet_mode) 
     fprintf(stderr,"Error unlinking file: %s\n",name);
 }
 
