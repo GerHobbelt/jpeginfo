@@ -87,6 +87,53 @@ char *current = NULL;
 
 /*****************************************************************/
 
+typedef void* backing_store_ptr;
+#include "../../source/fitz/jmemcust.h"
+
+#define JZ_CTX_FROM_CINFO(c) (fz_context *)(GET_CUST_MEM_DATA(c)->priv)
+
+static void*
+fz_jpg_mem_alloc(j_common_ptr cinfo, size_t size)
+{
+	fz_context* ctx = JZ_CTX_FROM_CINFO(cinfo);
+	return fz_malloc_no_throw(ctx, size);
+}
+
+static void
+fz_jpg_mem_free(j_common_ptr cinfo, void* object, size_t size)
+{
+	fz_context* ctx = JZ_CTX_FROM_CINFO(cinfo);
+	fz_free(ctx, object);
+}
+
+static void
+fz_jpg_mem_init(j_common_ptr cinfo, fz_context* ctx)
+{
+	jpeg_cust_mem_data* custmptr;
+	custmptr = fz_malloc_struct(ctx, jpeg_cust_mem_data);
+	if (!jpeg_cust_mem_init(custmptr, (void*)ctx, NULL, NULL, NULL,
+		fz_jpg_mem_alloc, fz_jpg_mem_free,
+		fz_jpg_mem_alloc, fz_jpg_mem_free, NULL))
+	{
+		fz_free(ctx, custmptr);
+		fz_throw(ctx, FZ_ERROR_GENERIC, "cannot initialize custom JPEG memory handler");
+	}
+	cinfo->client_data = custmptr;
+}
+
+static void
+fz_jpg_mem_term(j_common_ptr cinfo)
+{
+	if (cinfo->client_data)
+	{
+		fz_context* ctx = JZ_CTX_FROM_CINFO(cinfo);
+		fz_free(ctx, cinfo->client_data);
+		cinfo->client_data = NULL;
+	}
+}
+
+/*****************************************************************/
+
 METHODDEF(void)
 my_error_exit (j_common_ptr cinfo)
 {
@@ -176,15 +223,14 @@ int main(int argc, char **argv)
 
   global_total_errors=0;
 
-  struct jpeg_decompress_struct cinfo;
-  struct my_error_mgr jerr;
+  struct jpeg_decompress_struct cinfo = { 0 };
+  struct my_error_mgr jerr = { 0 };
 
   cinfo.mem = NULL;
   cinfo.global_state = 0;
   cinfo.err = jpeg_std_error(&jerr.pub);
 
-  cinfo.client_data = ctx;
-  //fz_jpg_mem_init((j_common_ptr)&cinfo, ctx);
+  fz_jpg_mem_init((j_common_ptr)&cinfo, ctx);
 
   fz_try(ctx)
   {
