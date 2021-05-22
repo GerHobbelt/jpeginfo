@@ -46,6 +46,7 @@
 #endif
 
 #include <stdio.h>
+#include <stdlib.h>  // getenv
 
 #ifdef HAVE_STRING_H
 #include <string.h>
