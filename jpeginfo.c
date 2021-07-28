@@ -37,10 +37,6 @@
 #define HOST_TYPE ""
 #endif
 
-#ifdef BROKEN_METHODDEF
-#undef METHODDEF
-#define METHODDEF(x) static x
-#endif
 
 #define EXIF_JPEG_MARKER   JPEG_APP0+1
 #define EXIF_IDENT_STRING  "Exif\000\000"
@@ -68,22 +64,22 @@ static struct option long_options[] = {
   {0,0,0,0}
 };
 
-FILE *infile=NULL;
-FILE *listfile=NULL;
-int global_error_counter;
-int global_total_errors;
-int verbose_mode = 0;
-int quiet_mode = 0;
-int delete_mode = 0;
-int check_mode = 0;
-int com_mode = 0;
-int del_mode = 0;
-int opt_index = 0;
-int list_mode = 0;
-int longinfo_mode = 0;
-int input_from_file = 0;
-int md5_mode = 0;
-char *current = NULL;
+static FILE *infile = NULL;
+static FILE *listfile = NULL;
+static int global_error_counter;
+static int global_total_errors;
+static int verbose_mode = 0;
+static int quiet_mode = 0;
+static int delete_mode = 0;
+static int check_mode = 0;
+static int com_mode = 0;
+static int del_mode = 0;
+static int opt_index = 0;
+static int list_mode = 0;
+static int longinfo_mode = 0;
+static int input_from_file = 0;
+static int md5_mode = 0;
+static char *current = NULL;
 
 /*****************************************************************/
 
@@ -134,7 +130,7 @@ fz_jpg_mem_term(j_common_ptr cinfo)
 
 /*****************************************************************/
 
-METHODDEF(void)
+static void
 my_error_exit (j_common_ptr cinfo)
 {
   my_error_ptr myerr = (my_error_ptr)cinfo->err;
@@ -143,7 +139,7 @@ my_error_exit (j_common_ptr cinfo)
 }
 
 
-METHODDEF(void)
+static void
 my_output_message (j_common_ptr cinfo)
 {
   char buffer[JMSG_LENGTH_MAX];
@@ -155,14 +151,14 @@ my_output_message (j_common_ptr cinfo)
 }
 
 
-void no_memory(void)
+static void no_memory(void)
 {
   fprintf(stderr,"jpeginfo: not enough memory!\n");
   exit(3);
 }
 
 
-void p_usage(void)
+static void p_usage(void)
 {
  if (!quiet_mode) {
   fprintf(stderr,"jpeginfo v" VERSION
