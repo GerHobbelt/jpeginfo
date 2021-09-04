@@ -202,7 +202,7 @@ static void error_exit(j_common_ptr cinfo)
 }
 
 /*****************************************************************/
-int main(int argc, char **argv)
+int main(int argc, const char** argv)
 {
   JSAMPARRAY buf = malloc(sizeof(JSAMPROW)*BUF_LINES);
   jpeg_saved_marker_ptr exif_marker, cmarker;
