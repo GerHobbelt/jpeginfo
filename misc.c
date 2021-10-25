@@ -39,7 +39,7 @@ long filesize(FILE *fp)
 }
 
 
-void delete_file(char *name, int verbose_mode, int quiet_mode)
+void delete_file(const char *name, int verbose_mode, int quiet_mode)
 {
   if (!name) return;
   if (verbose_mode && !quiet_mode) fprintf(stderr,"deleting: %s\n",name);

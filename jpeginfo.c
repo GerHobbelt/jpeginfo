@@ -202,6 +202,11 @@ static void error_exit(j_common_ptr cinfo)
 }
 
 /*****************************************************************/
+
+#if defined(BUILD_MONOLITHIC)
+#define main(cnt, arr) jpeginfo_main(cnt, arr)
+#endif
+
 int main(int argc, const char** argv)
 {
   JSAMPARRAY buf = malloc(sizeof(JSAMPROW)*BUF_LINES);
