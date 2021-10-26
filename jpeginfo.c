@@ -79,7 +79,7 @@ static int list_mode = 0;
 static int longinfo_mode = 0;
 static int input_from_file = 0;
 static int md5_mode = 0;
-static char *current = NULL;
+static const char *current = NULL;
 
 /*****************************************************************/
 
