@@ -86,7 +86,7 @@ static const char *current = NULL;
 typedef void* backing_store_ptr;
 #include "../../source/fitz/jmemcust.h"
 
-#define JZ_CTX_FROM_CINFO(c) (fz_context *)(GET_CUST_MEM_DATA(c)->priv)
+#define JZ_CTX_FROM_CINFO(c) (GET_CUST_MEM_DATA(c)->priv_ctx)
 
 static void*
 fz_jpg_mem_alloc(j_common_ptr cinfo, size_t size)
@@ -107,7 +107,7 @@ fz_jpg_mem_init(j_common_ptr cinfo, fz_context* ctx)
 {
 	jpeg_cust_mem_data* custmptr;
 	custmptr = fz_malloc_struct(ctx, jpeg_cust_mem_data);
-	if (!jpeg_cust_mem_init(custmptr, (void*)ctx, NULL, NULL, NULL,
+	if (!jpeg_cust_mem_init(custmptr, ctx, NULL, NULL, NULL, NULL, NULL,
 		fz_jpg_mem_alloc, fz_jpg_mem_free,
 		fz_jpg_mem_alloc, fz_jpg_mem_free, NULL))
 	{
