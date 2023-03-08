@@ -1,5 +1,5 @@
 
-Jpeginfo v1.6.2beta  Copyright (c)  Timo Kokkonen, 1995-2020.
+Jpeginfo v1.6.2  Copyright (c) 1995-2023, Timo Kokkonen.
 
 
 REQUIREMENTS
@@ -8,7 +8,7 @@ REQUIREMENTS
 
 TESTED PLATFORMS
 	Linux
-        OS X (Snow Leopard)
+	MacOS
 	Solaris
         IRIX
 	HP-UX
@@ -31,7 +31,9 @@ INSTALLATION
 
 
 HISTORY
-	v1.6.2 - improved Win32 support thanks to tumagonx
+	v1.6.2 - add SHA256 digest support (--sha256 or -2),
+	         improved Win32 support thanks to tumagonx,
+		 other minor fixes.
 	v1.6.1 - support for new libjpeg v7 thanks to Guido Vollbeding,
 		 fix to display of 8bit characters by Pierre Jarillon
 	v1.6.0 - added support for printing out Comments (from COM
@@ -66,6 +68,14 @@ LATEST VERSION
 		http://www.iki.fi/tjko/projects.html
 
 
+ACKNOWLEDGEMENT
+
+	- MD5 message-digest allgorithm used is public domain implementation
+	  written by Colin Plumb.
+	- SHA-256 message-digest algorithm used is public domain implementation
+	  by D. J. Bernstein (from NaCl library).
+
+
 
 Timo <tjko@iki.fi>
-01-Aug-2020
+07-Jan-2023
