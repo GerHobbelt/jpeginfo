@@ -203,10 +203,9 @@ static void no_memory(void)
 }
 
 
-void print_version()
+static void print_version(void)
 {
 	struct jpeg_error_mgr jcerr, *err;
-
 
 #ifdef  __DATE__
 	printf("jpeginfo v%s  %s (%s)\n", VERSION, HOST_TYPE, __DATE__);
@@ -357,6 +356,8 @@ static void parse_args(int argc, const char **argv)
 
 int main(int argc, const char** argv)
 {
+	MD5_CTX *MD5 = NULL;
+	JSAMPARRAY buf = NULL;
   fz_context* ctx = fz_get_global_context();
 
   global_total_errors = 0;
@@ -373,8 +374,9 @@ int main(int argc, const char** argv)
 
   fz_try(ctx)
   {
-	MD5_CTX *MD5 = malloc(sizeof(MD5_CTX));
-	JSAMPARRAY buf = malloc(sizeof(JSAMPROW)*BUF_LINES);
+	MD5 = fz_malloc(ctx, sizeof(MD5_CTX));
+	buf = fz_malloc(ctx, sizeof(JSAMPROW)*BUF_LINES);
+
 	jpeg_saved_marker_ptr exif_marker, cmarker;
 	int i,j;
 	unsigned char ch;
@@ -382,8 +384,6 @@ int main(int argc, const char** argv)
 	long fs;
 	char digest_text[65];
 	size_t last_read;
-
-	if (!buf || !MD5) no_memory();
 
 	for(i = 0; i < BUF_LINES; i++) {
 		buf[i] = NULL;
@@ -564,11 +564,15 @@ int main(int argc, const char** argv)
 		}
 	} while (++i<argc || input_from_file);
   }
-  fz_catch(ctx)
+  fz_always (ctx)
   {
 	  jpeg_destroy_decompress(&cinfo);
-	  free(buf);
-	  free(MD5);
+	  fz_free(ctx, buf);
+	  fz_free(ctx, MD5);
+  }
+  fz_catch(ctx)
+  {
+	  no_memory();
   }
 
 	return (global_total_errors > 0 ? 1 : 0); /* return 1 if any errors found file(s)
