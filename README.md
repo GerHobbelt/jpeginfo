@@ -1,6 +1,9 @@
 
 Jpeginfo v1.7.0beta  Copyright (c) 1995-2023, Timo Kokkonen.
 
+SYNOPSIS
+    Prints information and tests integrity of JPEG/JFIF files.
+
 
 REQUIREMENTS
 	jpeglib, Independent JPEG Group's jpeg library version 6a or
