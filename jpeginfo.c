@@ -43,14 +43,14 @@
 #include <jpeglib.h>
 #include <jerror.h>
 
+#include "md5/md5.h"
 #include "sha256/crypto_hash_sha256.h"
 #include "sha512/crypto_hash_sha512.h"
-#include "md5.h"
 #include "jpegmarker.h"
 #include "jpeginfo.h"
 
 
-#define VERSION     "1.7.0"
+#define VERSION     "1.7.1beta"
 #define COPYRIGHT   "Copyright (C) 1996-2023 Timo Kokkonen"
 
 #define BUF_LINES   512
@@ -102,6 +102,7 @@ static int stdin_mode = 0;
 static int csv_mode = 0;
 static int json_mode = 0;
 static int header_mode = 0;
+static int files_stdin_mode = 0;
 static const char *current = NULL;
 static char last_error[JMSG_LENGTH_MAX + 1];
 
@@ -124,6 +125,8 @@ static struct option long_options[] = {
 	{"json",0,0,'j'},
 	{"header",0,0,'H'},
 	{"stdin",0,&stdin_mode,1},
+	{"files-from",1,0,'f'},
+	{"files-stdin",0,&files_stdin_mode,1},
 	{0,0,0,0}
 };
 
@@ -265,15 +268,15 @@ static void print_usage(void)
 		"  -c, --check     Check files also for errors.\n"
 		"  -C, --comments  Display comments (from COM markers)\n"
 		"  -d, --delete    Delete files that have errors\n"
-		"  -f<filename>,  --file<filename>\n"
+		"  -f <filename>,  --files-from=<filename>\n"
 		"                  Read the filenames to process from given file\n"
-		"                  (for standard input use '-' as a filename)\n"
+		"   --files-stdin  Read the filenames to process from standard input\n"
 		"  -h, --help      Display this help and exit\n"
 		"  -H, --header    Display column name header in output\n"
 		"  -i, --info      Display even more information about pictures\n"
 		"  -j, --json      JSON output style.\n"
 		"  -l, --lsstyle   Use alternate listing format (ls -l style)\n"
-		"  -m<mode>, --mode=<mode>\n"
+		"  -m <mode>, --mode=<mode>\n"
 		"                  Defines which jpegs to remove (when using"
 		" the -d option).\n"
 		"                  Mode can be one of the following:\n"
@@ -318,12 +321,13 @@ static void parse_args(int argc, const char **argv)
 		case 'f':
 			if (verbose_mode)
 				fprintf(stderr, "Reading input filenames from: '%s'\n", optarg);
-			if (!strcmp(optarg, "-")) listfile=stdin;
-			else if ((listfile=fopen(optarg, "r")) == NULL) {
+			if (!strcmp(optarg, "-"))
+				listfile = stdin;
+			else if ((listfile = fopen(optarg, "r")) == NULL) {
 				fprintf(stderr, "Cannot open file '%s'.\n", optarg);
 				exit(2);
 			}
-			input_from_file=1;
+			input_from_file = 1;
 			break;
 		case 'v':
 			verbose_mode++;
@@ -379,6 +383,11 @@ static void parse_args(int argc, const char **argv)
 		if (argv[i][0]=='-' && argv[i][1]==0)
 			stdin_mode=1;
 		i++;
+	}
+
+	if (files_stdin_mode) {
+		listfile = stdin;
+		input_from_file = 1;
 	}
 
 	if (delete_mode && verbose_mode && !quiet_mode)

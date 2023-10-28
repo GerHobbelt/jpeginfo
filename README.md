@@ -1,5 +1,5 @@
 
-Jpeginfo v1.7.0  Copyright (c) 1995-2023, Timo Kokkonen.
+Jpeginfo v1.7.1beta  Copyright (c) 1995-2023, Timo Kokkonen.
 
 SYNOPSIS
     Prints information and tests integrity of JPEG/JFIF files.
@@ -34,6 +34,8 @@ INSTALLATION
 
 
 HISTORY
+	v1.7.1 - add --files-from and --files-stdin,
+	         minor fixed.
         v1.7.0 - support for CSV output (--csv),
 	         support for JSON output (--json),
 	         add support for reading input file from stdin (--stdin),
