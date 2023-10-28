@@ -68,23 +68,6 @@ struct my_error_mgr {
 };
 typedef struct my_error_mgr * my_error_ptr;
 
-static struct option long_options[] = {
-	{"verbose",0,0,'v'},
-	{"delete",0,0,'d'},
-	{"mode",1,0,'m'},
-	{"file",1,0,'f'},
-	{"check",0,0,'c'},
-	{"help",0,0,'h'},
-	{"quiet",0,0,'q'},
-	{"lsstyle",0,0,'l'},
-	{"info",0,0,'i'},
-	{"md5",0,0,'5'},
-	{"sha256",0,0,'2'},
-	{"version",0,0,'V'},
-	{"comments",0,0,'C'},
-	{0,0,0,0}
-};
-
 static FILE *infile = NULL;
 static FILE *listfile = NULL;
 static int global_error_counter = 0;
@@ -101,7 +84,27 @@ static int longinfo_mode = 0;
 static int input_from_file = 0;
 static int md5_mode = 0;
 static int sha256_mode = 0;
+static int stdin_mode = 0;
 static const char *current = NULL;
+
+
+static struct option long_options[] = {
+	{"verbose",0,0,'v'},
+	{"delete",0,0,'d'},
+	{"mode",1,0,'m'},
+	{"file",1,0,'f'},
+	{"check",0,0,'c'},
+	{"help",0,0,'h'},
+	{"quiet",0,0,'q'},
+	{"lsstyle",0,0,'l'},
+	{"info",0,0,'i'},
+	{"md5",0,0,'5'},
+	{"sha256",0,0,'2'},
+	{"version",0,0,'V'},
+	{"comments",0,0,'C'},
+	{"stdin",0,&stdin_mode,1},
+	{0,0,0,0}
+};
 
 /*****************************************************************************/
 
@@ -236,6 +239,8 @@ static void print_usage(void)
 	fprintf(stderr,"jpeginfo v" VERSION " " COPYRIGHT "\n");
 	fprintf(stderr,
 		"Usage: jpeginfo [options] <filenames>\n\n"
+		"  -2, --sha256    calculate SHA-256 checksum for each file\n"
+		"  -5, --md5       calculate MD5 checksum for each file\n"
 		"  -c, --check     check files also for errors\n"
 		"  -C, --comments  display comments (from COM markers)\n"
 		"  -d, --delete    delete files that have errors\n"
@@ -243,20 +248,20 @@ static void print_usage(void)
 		"                  read the filenames to process from given file\n"
 		"                  (for standard input use '-' as a filename)\n"
 		"  -h, --help      display this help and exit\n"
-		"  -2, --sha256    calculate SHA-256 checksum for each file\n"
-		"  -5, --md5       calculate MD5 checksum for each file\n"
 		"  -i, --info      display even more information about pictures\n"
 		"  -l, --lsstyle   use alternate listing format (ls -l style)\n"
-		"  -v, --verbose   enable verbose mode (positively chatty)\n"
-		"  --version	  print program version and exit\n"
-		"  -q, --quiet     quiet mode, output just jpeg infos\n"
 		"  -m<mode>, --mode=<mode>\n"
 		"                  defines which jpegs to remove (when using"
 		" the -d option).\n"
 		"                  Mode can be one of the following:\n"
 		"                    erronly     only files with serious errrors\n"
-		"                    all         files ontaining warnings or errors"
-		" (default)\n\n\n");
+		"                    all         files ontaining warnings or errors (default)\n"
+		"  -q, --quiet     quiet mode, output just jpeg infos\n"
+		"  -v, --verbose   enable verbose mode (positively chatty)\n"
+		"  -V, --version	  print program version and exit\n"
+		"\n"
+		"   -, --stdin         read input from standard input (instead of a file)\n"
+		"\n\n");
 
 	exit(0);
 }
@@ -272,7 +277,7 @@ static void error_exit(j_common_ptr cinfo)
 
 static void parse_args(int argc, const char **argv)
 {
-	int c;
+	int i, c;
 
 	if (argc < 2) {
 		if (quiet_mode < 2) fprintf(stderr, "jpeginfo: file arguments missing\n"
@@ -336,10 +341,15 @@ static void parse_args(int argc, const char **argv)
 		case '?':
 			break;
 
-		default:
-			if (!quiet_mode)
-				fprintf(stderr, "jpeginfo: error parsing parameters.\n");
 		}
+	}
+
+	/* check for '-' option indicating input is from stdin... */
+	i=1;
+	while (argv[i]) {
+		if (argv[i][0]=='-' && argv[i][1]==0)
+			stdin_mode=1;
+		i++;
 	}
 
 	if (delete_mode && verbose_mode && !quiet_mode)
@@ -381,9 +391,10 @@ int main(int argc, const char** argv)
 	int i,j;
 	unsigned char ch;
 	char namebuf[1024];
-	long fs;
+	unsigned char *inbuf = NULL;
+	long long fs;
 	char digest_text[65];
-	size_t last_read;
+	size_t inbuffersize;
 
 	for(i = 0; i < BUF_LINES; i++) {
 		buf[i] = NULL;
@@ -396,19 +407,50 @@ int main(int argc, const char** argv)
 
 	/* parse command line parameters */
 	parse_args(argc, argv);
+	i=(optind > 0 ? optind : 1);
 
 	/* process input file(s) */
-	i=1;
 	do {
-		if (input_from_file) {
-			if (!fgetstr(namebuf, sizeof(namebuf), listfile))
-				break;
-			current=namebuf;
-		}
-		else current=argv[i];
+		current = argv[i];
 
-		if (current[0]==0) continue;
-		if (current[0]=='-' && !input_from_file) continue;
+		/* open input file */
+
+		if (stdin_mode) {
+			if (verbose_mode)
+				fprintf(stderr, "Reading file: <STDIN>\n");
+			infile = stdin;
+			inbuffersize = 256 * 1024;
+			current = "-";
+		} else {
+			if (input_from_file) {
+				if (!fgetstr(namebuf, sizeof(namebuf), listfile))
+					break;
+				current=namebuf;
+			}
+			if (current[0]==0) continue;
+
+			if (verbose_mode)
+				fprintf(stderr, "Reading file: %s\n", current);
+			if ((infile=fopen(current,"rb"))==NULL) {
+				if (!quiet_mode) fprintf(stderr, "jpeginfo: can't open '%s'\n", current);
+				continue;
+			}
+			if (is_dir(infile)) {
+				fclose(infile);
+				if (verbose_mode) printf("directory: %s  skipped\n", current);
+				continue;
+			}
+			inbuffersize = filesize(infile);
+		}
+
+		/* read input file to buffer */
+		fs = read_file(infile, (inbuffersize > 0 ? inbuffersize : 65536), &inbuf);
+		if (fs < 0) {
+			no_memory();
+			if (!quiet_mode) fprintf(stderr, "jpeginfo: failed to read file: %s\n", (stdin_mode ? "STDIN" : current));
+			continue;
+		}
+		fclose(infile);
 
 		if (setjmp(jerr.setjmp_buffer)) {
 			jpeg_abort_decompress(&cinfo);
@@ -418,49 +460,27 @@ int main(int argc, const char** argv)
 					buf[j] = NULL;
 				}
 			}
-			fclose(infile);
 			if (list_mode && quiet_mode < 2) printf(" %s", current);
 			if (quiet_mode < 2) printf(" [ERROR]\n");
 			if (delete_mode) delete_file(current, verbose_mode, quiet_mode);
 			continue;
 		}
 
-		if ((infile=fopen(current,"rb"))==NULL) {
-			if (!quiet_mode) fprintf(stderr, "jpeginfo: can't open '%s'\n", current);
-			continue;
-		}
-		if (is_dir(infile)) {
-			fclose(infile);
-			if (verbose_mode) printf("directory: %s  skipped\n", current);
-			continue;
-		}
-
-		fs=filesize(infile);
 
 		if (md5_mode || sha256_mode) {
 			/* calculate hash (message-digest) of the input file */
-			unsigned char *buf, digest[32];
+			unsigned char digest[32];
 
-			if ((buf = malloc(fs)) == NULL)
-				no_memory();
-			last_read = fread(buf, 1, fs, infile);
-			rewind(infile);
-			if (last_read < fs) {
-				fprintf(stderr, "jpeginfo: failed to read entire file: %s\n", current);
-				digest_text[0] = 0;
+			digest_text[0] = 0;
+			if (md5_mode) {
+				MD5Init(MD5);
+				MD5Update(MD5, inbuf, fs);
+				MD5Final(digest, MD5);
+				digest2str(digest, digest_text, 16);
 			} else {
-				if (md5_mode) {
-					MD5Init(MD5);
-					MD5Update(MD5, buf, fs);
-					MD5Final(digest, MD5);
-					digest2str(digest, digest_text, 16);
-				} else {
-					crypto_hash_sha256(digest, buf, fs);
-					digest2str(digest, digest_text, 32);
-				}
+				crypto_hash_sha256(digest, inbuf, fs);
+				digest2str(digest, digest_text, 32);
 			}
-
-			free(buf);
 		}
 
 		if (!list_mode && quiet_mode < 2) printf("%s ", current);
@@ -468,7 +488,7 @@ int main(int argc, const char** argv)
 		global_error_counter=0;
 		if (com_mode) jpeg_save_markers(&cinfo, JPEG_COM, 0xffff);
 		jpeg_save_markers(&cinfo, EXIF_JPEG_MARKER, 0xffff);
-		jpeg_stdio_src(&cinfo, infile);
+		jpeg_mem_src(&cinfo, inbuf, fs);
 		jpeg_read_header(&cinfo, TRUE);
 
 		/* check for Exif marker */
@@ -500,9 +520,9 @@ int main(int argc, const char** argv)
 						(cinfo.density_unit==1?'i':'c') );
 
 				if (cinfo.CCIR601_sampling) printf(",CCIR601");
-				printf(" %7ld ",fs);
+				printf(" %7lld ",fs);
 
-			} else printf("%c %7ld ",(cinfo.progressive_mode ? 'P' : 'N'), fs);
+			} else printf("%c %7lld ",(cinfo.progressive_mode ? 'P' : 'N'), fs);
 
 			if (md5_mode || sha256_mode) printf("%s ", digest_text);
 			if (list_mode) printf("%s ", current);
@@ -546,7 +566,6 @@ int main(int argc, const char** argv)
 				free(buf[j]);
 				buf[j] = NULL;
 			}
-			fclose(infile);
 
 			if (!global_error_counter) {
 				if (quiet_mode < 2) printf(" [OK]\n");
@@ -560,12 +579,13 @@ int main(int argc, const char** argv)
 		else { /* !check_mode */
 			if (quiet_mode < 2) printf("\n");
 			jpeg_abort_decompress(&cinfo);
-			fclose(infile);
 		}
-	} while (++i<argc || input_from_file);
+	} while ((!stdin_mode && ++i<argc) || input_from_file);
   }
   fz_always (ctx)
   {
+	  if (inbuf)
+		free(inbuf);
 	  jpeg_destroy_decompress(&cinfo);
 	  fz_free(ctx, buf);
 	  fz_free(ctx, MD5);
