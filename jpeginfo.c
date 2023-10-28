@@ -308,7 +308,7 @@ static void parse_args(int argc, const char **argv)
 
 	while(1) {
 		opt_index=0;
-		if ( (c=getopt_long(argc,argv, "livVdcChqm:f:52sH",
+		if ( (c=getopt_long(argc,argv, "livVdcChqm:f:52sHj",
 						long_options, &opt_index))  == -1)
 			break;
 		switch (c) {
@@ -625,7 +625,7 @@ void print_jpeg_info(struct jpeg_info *info)
 	if (csv_mode) {
 		printf("\"%s\",%lu,\"%s\",%d,%d,\"%dbit\",\"%s\",\"%c\",\"%s\",\"%s\",\"%s\",\"%s\"\n",
 			info->filename,
-			info->size,
+			(long unsigned int)info->size,
 			digest,
 			info->width,
 			info->height,
@@ -645,7 +645,7 @@ void print_jpeg_info(struct jpeg_info *info)
 			" \"color_depth\":\"%dbit\", \"type\":\"%s\", \"mode\":\"%s\", \"info\":\"%s\","
 			" \"comments\":\"%s\", \"status\":\"%s\", \"status_detail\":\"%s\" }",
 			info->filename,
-			info->size,
+			(long unsigned int)info->size,
 			digest,
 			info->width,
 			info->height,
@@ -668,7 +668,7 @@ void print_jpeg_info(struct jpeg_info *info)
 		if (longinfo_mode)
 			printf("%-20s ", einfo);
 		printf("%7lu ",
-			info->size);
+			(long unsigned int)info->size);
 		if (info->digest)
 			printf("%s ", digest);
 		if (com_mode)
@@ -691,7 +691,7 @@ void print_jpeg_info(struct jpeg_info *info)
 		if (longinfo_mode)
 			printf("%-20s ", einfo);
 		printf("%7lu ",
-			info->size);
+			(long unsigned int)info->size);
 		if (info->digest)
 			printf("%s ", digest);
 		if (com_mode)
