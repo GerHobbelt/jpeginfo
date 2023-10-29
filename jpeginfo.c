@@ -76,12 +76,13 @@ struct jpeg_info {
 	int check;
 	size_t size;
 	char *filename;
-	char *type;;
+	char *type;
 	char *info;
 	char *comments;
 	char *digest;
 	char *error;
 };
+
 static FILE *infile = NULL;
 static FILE *listfile = NULL;
 static int global_error_counter = 0;
@@ -231,11 +232,11 @@ static void my_output_message (j_common_ptr cinfo)
 static void no_memory(void)
 {
 	fprintf(stderr,"jpeginfo: not enough memory!\n");
-	exit(3);
+	fz_throw(NULL, FZ_ERROR_MEMORY, "jpeginfo: not enough memory");
 }
 
 
-static void print_version(void)
+static void print_version(struct my_error_mgr *jerr)
 {
 #ifdef  __DATE__
 	printf("jpeginfo v%s  %s (%s)\n", VERSION, HOST_TYPE, __DATE__);
@@ -248,15 +249,15 @@ static void print_version(void)
 		"See the GNU General Public License for more details.\n\n");
 
 	printf("\nlibjpeg version: %s\n%s\n",
-		jerr.pub.jpeg_message_table[JMSG_VERSION],
-		jerr.pub.jpeg_message_table[JMSG_COPYRIGHT]);
+		jerr->pub.jpeg_message_table[JMSG_VERSION],
+		jerr->pub.jpeg_message_table[JMSG_COPYRIGHT]);
 }
 
 
 static void print_usage(void)
 {
 	if (quiet_mode)
-		exit(0);
+		return;
 
 	fprintf(stderr,"jpeginfo v" VERSION " " COPYRIGHT "\n");
 	fprintf(stderr,
@@ -288,8 +289,6 @@ static void print_usage(void)
 		"\n"
 		"   -, --stdin     Read input from standard input (instead of a file)\n"
 		"\n\n");
-
-	exit(0);
 }
 
 static void error_exit(j_common_ptr cinfo)
@@ -301,7 +300,7 @@ static void error_exit(j_common_ptr cinfo)
 	fz_throw(ctx, FZ_ERROR_GENERIC, "jpeg error: %s", msg);
 }
 
-static void parse_args(int argc, const char **argv)
+static int parse_args(int argc, const char **argv, struct my_error_mgr *jerr)
 {
 	while(1) {
 		opt_index=0;
@@ -323,7 +322,7 @@ static void parse_args(int argc, const char **argv)
 				listfile = stdin;
 			else if ((listfile = fopen(optarg, "r")) == NULL) {
 				fprintf(stderr, "Cannot open file '%s'.\n", optarg);
-				exit(2);
+				return 2;
 			}
 			input_from_file = true;
 			break;
@@ -331,8 +330,8 @@ static void parse_args(int argc, const char **argv)
 			verbose_mode++;
 			break;
 		case 'V':
-			print_version();
-			exit(0);
+			print_version(jerr);
+			return 0;
 		case 'd':
 			delete_mode = true;
 			break;
@@ -341,7 +340,7 @@ static void parse_args(int argc, const char **argv)
 			break;
 		case 'h':
 			print_usage();
-			break;
+			return 0;
 		case 'q':
 			quiet_mode++;
 			break;
@@ -370,8 +369,7 @@ static void parse_args(int argc, const char **argv)
 			header_mode = true;
 			break;
 		case '?':
-			exit(1);
-
+			return 1;
 		}
 	}
 
@@ -395,9 +393,10 @@ static void parse_args(int argc, const char **argv)
 	if (argc <= optind && !input_from_file) {
 		if (quiet_mode < 2) fprintf(stderr, "jpeginfo: file arguments missing\n"
 					"Try 'jpeginfo --help' for more information.\n");
-		exit(1);
+		return 1;
 	}
 
+	return -1;
 }
 
 
@@ -722,9 +721,10 @@ void clear_line_buffer(JSAMPARRAY buf)
 
 int main(int argc, const char** argv)
 {
-	MD5_CTX *MD5 = NULL;
-	JSAMPARRAY buf = NULL;
+  MD5_CTX *MD5 = NULL;
+  JSAMPARRAY buf = NULL;
   fz_context* ctx = fz_get_global_context();
+  int rv = 0;
 
   global_total_errors = 0;
 
@@ -738,28 +738,33 @@ int main(int argc, const char** argv)
   cinfo.client_data_ref = ctx;
   cinfo.client_init_callback = jpi_jpg_sys_mem_register;
 
+  unsigned char *inbuf = NULL;
+  struct jpeg_info info;
+  clear_jpeg_info(&info);
+
   fz_try(ctx)
   {
 	char namebuf[MAXPATHLEN + 1];
 	JSAMPROW line_buffer[BUF_LINES];
 
 	JSAMPARRAY buf = line_buffer;
-	unsigned char *inbuf = NULL;
 	long long file_size;
 	size_t inbuffer_size;
 	/* Initialize memory structures... */
 	for(int i = 0; i < BUF_LINES; i++) {
 		buf[i] = NULL;
 	}
-	struct jpeg_info info;
-	clear_jpeg_info(&info);
+
 	cinfo.err = jpeg_std_error(&jerr.pub);
 	jpeg_create_decompress(&cinfo);
 	jerr.pub.error_exit=my_error_exit;
 	jerr.pub.output_message=my_output_message;
 
 	/* Parse command line parameters */
-	parse_args(argc, argv);
+	rv = parse_args(argc, argv, &jerr);
+	if (rv >= 0)
+		goto do_exit;
+
 	int i=(optind > 0 ? optind : 1);
 
 	/* Loop to process input file(s) */
@@ -894,20 +899,22 @@ int main(int argc, const char** argv)
   {
 	if (json_mode)
 		printf("\n]\n");
-
-	/* Free up allocated memory to keep MemorySanitizier happy :-) */
-	jpeg_destroy_decompress(&cinfo);
-	free_jpeg_info(&info);
-	  if (inbuf)
-		free(inbuf);
   }
   fz_catch(ctx)
   {
-	  no_memory();
+	  fz_log_error(ctx, fz_caught_message(ctx));
   }
 
+do_exit:
+  /* Free up allocated memory to keep MemorySanitizier happy :-) */
+  jpeg_destroy_decompress(&cinfo);
+  free_jpeg_info(&info);
+  if (inbuf)
+	  free(inbuf);
+  fz_drop_context(ctx);
+
 	 /* Return 1 if any errors found in files checked */
-	return (global_total_errors > 0 ? 1 : 0);
+	return rv > 0 ? rv : (global_total_errors > 0 ? 1 : 0);
 }
 
 /* :-) */
