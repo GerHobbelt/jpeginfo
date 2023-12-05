@@ -232,7 +232,7 @@ static void my_output_message (j_common_ptr cinfo)
 static void no_memory(void)
 {
 	fprintf(stderr,"jpeginfo: not enough memory!\n");
-	fz_throw(NULL, FZ_ERROR_MEMORY, "jpeginfo: not enough memory");
+	fz_throw(NULL, FZ_ERROR_SYSTEM, "jpeginfo: not enough memory");
 }
 
 
