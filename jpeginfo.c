@@ -52,7 +52,7 @@
 #include "jpeginfo.h"
 
 
-#define VERSION     "1.7.1beta"
+#define VERSION     "1.7.1"
 #define COPYRIGHT   "Copyright (C) 1996-2023 Timo Kokkonen"
 
 #define BUF_LINES   512
@@ -916,5 +916,3 @@ do_exit:
 	 /* Return 1 if any errors found in files checked */
 	return rv > 0 ? rv : (global_total_errors > 0 ? 1 : 0);
 }
-
-/* :-) */
