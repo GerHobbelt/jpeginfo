@@ -902,7 +902,7 @@ int main(int argc, const char** argv)
   }
   fz_catch(ctx)
   {
-	  fz_log_error(ctx, fz_caught_message(ctx));
+		fz_report_error(ctx);
   }
 
 do_exit:
