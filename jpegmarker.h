@@ -19,7 +19,7 @@ extern const struct jpeg_special_marker_type jpeg_special_marker_types[];
 const char* jpeg_marker_name(unsigned int marker);
 const char* jpeg_special_marker_name(jpeg_saved_marker_ptr marker);
 int jpeg_special_marker(jpeg_saved_marker_ptr marker);
-size_t jpeg_special_marker_types_count();
+size_t jpeg_special_marker_types_count(void);
 
 
 #endif /* JPEGMARKER_H */

@@ -110,7 +110,7 @@ const char* jpeg_marker_name(unsigned int marker)
 	return "Unknown";
 }
 
-size_t jpeg_special_marker_types_count()
+size_t jpeg_special_marker_types_count(void)
 {
 	int i = 0;
 
