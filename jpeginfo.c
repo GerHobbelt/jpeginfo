@@ -312,7 +312,7 @@ static void error_exit(j_common_ptr cinfo)
 	fz_throw(ctx, FZ_ERROR_GENERIC, "jpeg error: %s", msg);
 }
 
-static void print_hash_header()
+static void print_hash_header(void)
 {
 	switch (hash_mode) {
 	case HASH_MD5:
